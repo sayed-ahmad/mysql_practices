@@ -1,0 +1,215 @@
+
+
+USE atlas;
+
+-- 1. How many artists are in the database?
+SELECT 
+    *
+FROM
+    artists;
+
+-- 2. Create an alphabetised list of the artists.
+SELECT 
+    *
+FROM
+    artists
+ORDER BY last_name;
+
+-- 3. Show only the museums in the Netherlands.
+SELECT 
+    *
+FROM
+    museums
+WHERE
+    country = 'Netherlands';
+    
+-- 4. Get the full name, artist ID, and nationality of artists not from the US.
+SELECT 
+    full_name, artist_id, nationality
+FROM
+    artists
+WHERE
+    nationality != 'American';
+
+-- 5. Find the work with the greatest regular price.
+SELECT 
+    *
+FROM
+    product_prices
+ORDER BY regular_price DESC
+LIMIT 1;
+
+-- 6. Which works have 'love' in their name?
+SELECT 
+    *
+FROM
+    works
+WHERE
+    `name` RLIKE '\\blove\\b';
+
+-- 7. Which day are the most museums open?
+SELECT 
+    `day`, COUNT(*) AS open_museums
+FROM
+    museum_hours
+GROUP BY `day`
+ORDER BY COUNT(*) DESC;
+   
+-- 8. Which styles have more than 1000 works?
+SELECT 
+    style, COUNT(*) AS num_works
+FROM
+    works
+GROUP BY style
+HAVING COUNT(*) > 1000;
+
+-- 9. How many artists there are per nationality?
+SELECT 
+    nationality, COUNT(*) AS num_artists
+FROM
+    artists
+GROUP BY nationality;
+
+-- 10. Find the name of the museum which hosts the most paintings.
+SELECT 
+    m.`name`, COUNT(*) AS num_works
+FROM
+    works w
+        JOIN
+    museums m USING (museum_id)
+GROUP BY museum_id
+ORDER BY COUNT(*) DESC
+LIMIT 1;
+
+-- 11. Which artists have a first name that starts with 'A' and is 5 letters long?
+SELECT 
+    *
+FROM
+    artists
+WHERE
+    first_name LIKE 'A____';
+
+-- 12. Find the total number of works painted by each artist.
+SELECT 
+    artist_id, COUNT(*) AS num_works
+FROM
+    works
+GROUP BY artist_id;
+
+-- 13. Find the artist that appears in the most museums.
+SELECT 
+    full_name, COUNT(DISTINCT museum_id) AS num_museums
+FROM
+    works
+        JOIN
+    artists USING (artist_id)
+GROUP BY artist_id
+ORDER BY COUNT(DISTINCT museum_id) DESC
+LIMIT 1;
+
+-- 14. Find the style with the most works.
+SELECT 
+    style, COUNT(*) AS num_works
+FROM
+    works
+GROUP BY style
+ORDER BY COUNT(*) DESC
+LIMIT 1;
+
+-- 15. Which museums are open only in the afternoon? On which days?
+SELECT 
+    `name`, `day`, `open`, `close`
+FROM
+    museum_hours
+        JOIN
+    museums USING (museum_id)
+WHERE
+    `open` LIKE '%PM' AND `close` LIKE '%PM'
+ORDER BY `name`;
+
+-- 16. Which artists have works in the 'Baroque' or 'Rococo' styles?
+SELECT DISTINCT
+    full_name
+FROM
+    artists
+        JOIN
+    works w USING (artist_id)
+WHERE
+    w.style IN ('Baroque' , 'Rococo');
+    
+-- 17. Which works are in the 'Baroque' or 'Rococo' style and have a name that is exactly 5 characters long?
+SELECT 
+    `name`
+FROM
+    works
+WHERE
+    style IN ('Baroque' , 'Rococo')
+        AND 
+	LENGTH(`name`) = 5;
+
+-- 18. Classify artists as 'Local' if they are Flemish, 'Nearby' if they are Dutch, and 'International' otherwise.
+SELECT 
+	*, 
+    CASE 
+		WHEN nationality = 'Flemish' THEN 'Local' 
+		WHEN nationality = 'Dutch' THEN  'Nearby'
+		ELSE 'International' 
+	END AS locality
+FROM artists;
+
+-- 19. Find the average price for each size of product.
+SELECT 
+    size_id, AVG(regular_price)
+FROM
+    product_prices
+GROUP BY size_id;
+
+-- 20. Find the paiting (name and artist) with the most subjects.
+SELECT 
+    `name`, full_name, COUNT(*) AS num_subjects
+FROM
+    subjects
+        JOIN
+    works USING (work_id)
+        JOIN
+    artists USING (artist_id)
+GROUP BY work_id
+ORDER BY COUNT(*) DESC;
+
+-- 21. How many days a week is each museum open?
+SELECT 
+    `name`, COUNT(*) AS days_open
+FROM
+    museums
+        JOIN
+    museum_hours USING (museum_id)
+GROUP BY museum_id;
+
+-- 22. Find the average sale price for each style of work. Only include styles with between 100 and 500 paintings.
+SELECT 
+    style, AVG(sale_price)
+FROM
+    works
+        JOIN
+    product_prices USING (work_id)
+GROUP BY style
+HAVING COUNT(DISTINCT work_id) BETWEEN 100 AND 500;
+
+/* 23. Find the average sale price of works by each artist. 
+Add an extra column categorising the artists into 'High', 'Medium', 'Low' based on the average sale price.
+High is more than 500, Low is less than 100. */
+SELECT 
+	full_name, 
+    AVG(sale_price), 
+	CASE 
+		WHEN AVG(sale_price) < 100 THEN 'Low' 
+        WHEN AVG(sale_price) > 500 THEN 'High' 
+        ELSE 'Medium' 
+	END AS price_rating
+FROM 
+	artists 
+		JOIN 
+    works USING (artist_id) 
+		JOIN 
+	product_prices USING (work_id) 
+GROUP BY artist_id;
